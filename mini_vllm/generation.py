@@ -25,3 +25,27 @@ def select_greedy_token(logits: Tensor) -> Tensor:
 
     final_position_logits = logits[:, -1, :]
     return torch.argmarx(final_position_logits, dim=-1, keepdim=True)
+
+
+@torch.inference_mode()
+def decode_one_token(
+    model: nn.Module,
+    input_ids: Tensor,
+    attention_mask: Tensor,
+    kv_cache: Any,
+    cache_position: Tensor,
+) -> Any:
+    """Prcess one new token while reusing the keys and values already cached"""
+    if input_ids.ndim != 2 or input_ids.shape[1] != 1:
+        raise ValueError(
+            "Expected one token per batch item shaped [batch, 1], "
+            f"But receibed {tuple(input_ids.shape)}"
+        )
+
+    return model(
+        input_ids=input_ids, 
+        attention_mask=attention_mask,
+        past_key_values=kv_cache,
+        cache_position=cache_position,
+        use_cache=True,
+    )
