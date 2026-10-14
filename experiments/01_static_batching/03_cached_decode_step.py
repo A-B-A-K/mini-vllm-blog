@@ -12,7 +12,7 @@ EXPECTED_FIRST_TOKEN_ID = 12095
 EXPECTED_SECOND_TOKEN_ID = 13
 
 
-def main() -> None: 
+def main() -> None:
     model, tokenizer = load_model_and_tokenize(
         MODEL_NAME,
         MODEL_REVISION,
@@ -41,7 +41,9 @@ def main() -> None:
     decode_attention_mask = torch.cat(
         [
             prompt_attention_mask,
-            prompt_attention_mask.new_ones((prompt_attention_mask.shape[0], -1)),
+            prompt_attention_mask.new_ones(
+                (prompt_attention_mask.shape[0], -1)
+            ),
         ],
         dim=-1,
     )
@@ -77,7 +79,10 @@ def main() -> None:
     print(f"decode attention-mask shape {decode_attention_mask.shape}")
     print(f"cached position {cache_position.tolist()}")
     print(f"decode logits shape {decode_output.logits.shape}")
-    print(f"first layer key shape after decode {first_layer_key_shape_after_decode}")
+    print(
+        "first layer key shape after decode: "
+        f"{first_layer_key_shape_after_decode}"
+    )
     print(f"cached tokens after decode {cached_tokens_after_decode}")
     print(f"second selected token {tokenizer.decode(second_token_id)}")
 
@@ -86,7 +91,8 @@ def main() -> None:
 
     if actual_token_ids != expected_token_ids:
         raise RuntimeError(
-            f"expected reference tokens {expected_token_ids} but got {actual_token_ids}"
+            f"expected reference tokens {expected_token_ids} "
+            f"but got {actual_token_ids}"
         )
 
     print("MMatches the first two HF reference tokens: yes")

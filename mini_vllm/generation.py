@@ -15,6 +15,7 @@ def prefill(model: nn.module, input_ids: Tensor, attention_mask: Tensor) -> Any:
         use_cache=True,
     )
 
+
 def select_greedy_token(logits: Tensor) -> Tensor:
     """Select the highest-scoring next token for every item in a batch"""
     if logits.ndim != 3:
@@ -43,7 +44,7 @@ def decode_one_token(
         )
 
     return model(
-        input_ids=input_ids, 
+        input_ids=input_ids,
         attention_mask=attention_mask,
         past_key_values=kv_cache,
         cache_position=cache_position,

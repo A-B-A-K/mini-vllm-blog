@@ -10,12 +10,14 @@ MODEL_REVISION = "060db6499f32faf8b98477b0a26969ef7d8b9987"
 PROMPT = "The capital of France is"
 EXPECTED_NEXT_TOKEN_ID = 12095
 
+
 def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if device.type == "cuda":
-        dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() \
-            else torch.float16
+        dtype = (
+            torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+        )
     else:
         dtype = torch.float32
 
@@ -60,6 +62,7 @@ def main() -> None:
         )
 
     print("Matches HuggingFace reference: yes")
+
 
 if __name__ == "__main__":
     main()
