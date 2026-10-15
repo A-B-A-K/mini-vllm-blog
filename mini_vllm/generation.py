@@ -50,3 +50,56 @@ def decode_one_token(
         cache_position=cache_position,
         use_cache=True,
     )
+
+
+@torch.inference_mode()
+def generate_greedy(
+    model: nn.Module,
+    input_ids: Tensor,
+    attention_mask: Tensor,
+    max_new_tokens: int,
+) -> Tensor:
+    """Generate a fixed number of new tokens while reusing the KV cache"""
+    if max_new_tokens < 1:
+        raise ValueError("max_new_tokens must be at least 1")
+
+    model_output = prefill(
+        model=model,
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+    )
+    next_token_ids = select_greedy_token(model_output.logits)
+    generated_token_ids = [next_token_ids]
+
+    kv_cache = model_output.past_key_values
+    decode_attention_mask = attention_mask
+    cache_position = torch.tensor(
+        [input_ids.shape[1]],
+        dtype=torch.long,
+        device=input_ids.device,
+    )
+
+    for _ in range(max_new_tokens - 1):
+        decode_attention_mask = torch.cat(
+            [
+                decode_attention_mask,
+                decode_attention_mask.new_ones(
+                    (decode_attention_mask.shape[0], 1)
+                    ),
+            ],
+            dim=-1,
+        )
+        model_output = decode_one_token(
+            model=model,
+            input_ids=input_ids,
+            attention_mask=decode_attention_mask,
+            kv_cache=kv_cache,
+            cache_position=cache_position,
+        )
+        generate_token_ids = select_greedy_token(model_output.logits)
+        generated_token_ids.append(next_token_ids)
+
+        kv_cache = model_output.past_key_values
+        cache_position += 1
+
+    return torch.cat(generate_token_ids, dim=-1)

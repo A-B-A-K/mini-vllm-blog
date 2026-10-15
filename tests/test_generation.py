@@ -1,13 +1,47 @@
+from types import SimpleNamespace
+
 import pytest
 import torch
 
-from mini_vllm.generation import decode_one_token, select_greedy_token
+from mini_vllm.generation import (
+    decode_one_token,
+    generate_greedy,
+    select_greedy_token,
+)
 
 
 class RecordingModel(torch.nn.Module):
     def forward(self, **model_inputs: object) -> str:
         self.model_inputs = model_inputs
         return "model output"
+
+
+class ScriptedModel(torch.nn.Module):
+    def __init__(self, next_token_ids: list[int]) -> None:
+        super().__init__()
+        self.next_token_ids = next_token_ids
+        self.calls: list[dict[str, object]] = []
+
+    def forward(self, **model_inputs: object) -> SimpleNamespace:
+        input_ids = model_inputs["input_ids"]
+        if not isinstance(input_ids, torch.Tensor):
+            raise TypeError("input_ids must be a tensor.")
+
+        next_token_id = self.next_token_ids[len(self.calls)]
+        self.calls.append(model_inputs)
+
+        logits = torch.zeros(
+            input_ids.shape[0],
+            input_ids.shape[1],
+            max(self.next_token_ids)+1,
+            device=input_ids.device,
+        )
+        logits[:, -1, next_token_id] = 1
+
+        return SimpleNamespace(
+            logits=logits,
+            past_key_values=f"cache-{len(self.calls)}",
+        )
 
 
 def test_select_greedy_token_uses_final_sequence_position() -> None:
@@ -64,4 +98,41 @@ def test_decode_one_token_rejects_more_than_one_token() -> None:
             attention_mask=torch.ones(1, 4, dtype=torch.long),
             kv_cache=object(),
             cache_position=torch.tensor([2, 3]),
+        )
+
+
+def test_generate_greedy_reuses_cache_until_requested_length() -> None:
+    model = ScriptedModel(next_token_ids=[2, 1, 3])
+    input_ids = torch.tensor([4, 5, 6])
+    attention_mask = torch.ones(1, 3, dtype=torch.long)
+
+    generated_ids = generate_greedy(
+        model=model,
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        max_new_tokens=3,
+    )
+
+    assert generated_ids.tolist() == [[2, 1, 3]]
+    assert len(model.calls) == 3
+
+    assert "past_key_values" not in model.calls[0]
+    assert model.calls[1]["past_key_values"] == "cache-1"
+    assert model.calls[2]["past_key_values"] == "cache-2"
+
+    assert model.calls[1]["cache_position"].tolist() == [3]
+    assert model.calls[2]["cache_position"].tolist() == [4]
+
+    assert model.calls[0]["attention_mask"].shape == (1, 3)
+    assert model.calls[1]["attention_mask"].shape == (1, 4)
+    assert model.calls[2]["attention_mask"].shape == (1, 5)
+
+
+def test_generate_greedy_requires_at_least_one_new_token() -> None:
+    with pytest.raises(ValueError, match="at least 1"):
+        generate_greedy(
+            model=RecordingModel(),
+            input_ids=torch.tensor([[1]]),
+            attention_mask=torch.ones(1, 1, dtype=torch.long),
+            max_new_tokens=0,
         )
