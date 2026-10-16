@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from mini_vllm.generation import (
+    build_position_ids,
     decode_one_token,
     generate_greedy,
     select_greedy_token,
@@ -62,6 +63,22 @@ def test_select_greedy_token_requires_three_dimensions() -> None:
 
     with pytest.raises(ValueError, match="batch, sequence, vocabulary"):
         select_greedy_token(logits)
+
+
+def test_build_position_ids_ignores_left_padding() -> None:
+    attention_mask = torch.tensor(
+        [
+            [0, 0, 1, 1, 1],
+            [1, 1, 1, 1, 1],
+        ]
+    )
+
+    position_ids = build_position_ids(attention_mask)
+
+    assert position_ids.tolist() == [
+        [1, 1, 0, 1, 2],
+        [0, 1, 2, 3, 4],
+    ]
 
 
 def test_decode_one_token_passes_cache_and_position_to_model() -> None:
@@ -136,3 +153,33 @@ def test_generate_greedy_requires_at_least_one_new_token() -> None:
             attention_mask=torch.ones(1, 1, dtype=torch.long),
             max_new_tokens=0,
         )
+
+
+def test_generate_greedy_tracks_positions_in_a_left_padded_batch() -> None:
+    model = ScriptedModel(next_token_ids=[2, 1])
+    input_ids = torch.tensor(
+        [
+            [0, 4, 5],
+            [6, 7, 8],
+        ]
+    )
+    attention_mask = torch.tensor(
+        [
+            [0, 1, 1],
+            [1, 1, 1],
+        ]
+    )
+
+    generate_greedy(
+        model=model,
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        max_new_tokens=2,
+    )
+
+    assert model.calls[0]["position_ids"].tolist() == [
+        [1, 0, 1],
+        [0, 1, 2],
+    ]
+    assert model.calls[1]["position_ids"].tolist() == [[2], [3]]
+    assert model.calls[1]["cache_position"].tolist() == [3]
