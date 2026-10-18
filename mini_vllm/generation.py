@@ -20,7 +20,7 @@ def build_position_ids(attention_mask: Tensor) -> Tensor:
 
 
 @torch.inference_mode()
-def prefill(model: nn.module, 
+def prefill(model: nn.Module, 
             input_ids: Tensor, 
             attention_mask: Tensor,
             position_ids: Optional[Tensor] = None,
@@ -39,12 +39,12 @@ def select_greedy_token(logits: Tensor) -> Tensor:
     """Select the highest-scoring next token for every item in a batch"""
     if logits.ndim != 3:
         raise ValueError(
-            "Expected logits shaped [batch, sequence, vocab]"
+            "Expected logits shaped [batch, sequence, vocab] "
             f"Received {tuple(logits.shape)}"
         )
 
     final_position_logits = logits[:, -1, :]
-    return torch.argmarx(final_position_logits, dim=-1, keepdim=True)
+    return torch.argmax(final_position_logits, dim=-1, keepdim=True)
 
 
 @torch.inference_mode()
@@ -115,20 +115,20 @@ def generate_greedy(
 
         decode_position_ids = build_position_ids(
             decode_attention_mask
-        )[:, -1, :]
+        )[:, -1:]
         
         model_output = decode_one_token(
             model=model,
-            input_ids=input_ids,
+            input_ids=next_token_ids,
             attention_mask=decode_attention_mask,
             kv_cache=kv_cache,
             cache_position=cache_position,
             position_ids=decode_position_ids,
         )
-        generate_token_ids = select_greedy_token(model_output.logits)
+        next_token_ids = select_greedy_token(model_output.logits)
         generated_token_ids.append(next_token_ids)
 
         kv_cache = model_output.past_key_values
-        cache_position += 1
+        cache_position = cache_position + 1
 
-    return torch.cat(generate_token_ids, dim=-1)
+    return torch.cat(generated_token_ids, dim=-1)

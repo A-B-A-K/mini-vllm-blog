@@ -21,7 +21,7 @@ def main() -> None:
 
     independent_token_ids = []
     for prompt in PROMPTS:
-        encoded = tokenizer(prompt, return_tensor="pt")
+        encoded = tokenizer(prompt, return_tensors="pt")
         generated_ids = generate_greedy(
             model=model,
             input_ids=encoded["input_ids"].to(device),
@@ -77,13 +77,13 @@ def main() -> None:
         print(f"    Next ones {tokenizer.decode(batch_generated_ids[index])}")
         print(f"    Matches independent generation {row_matches}")
 
-        if not all_match:
-            raise RuntimeError(
-                "At least 1 batch continuation differed from indep generation"
-            )
+    if not all_match:
+        raise RuntimeError(
+            "At least 1 batch continuation differed from indep generation"
+        )
 
-        print()
-        print("Every batched continuation matches indep generation")
+    print()
+    print("Every batched continuation matches indep generation")
 
 
 if __name__ == "__main__":

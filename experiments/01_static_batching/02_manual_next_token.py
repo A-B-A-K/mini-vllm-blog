@@ -3,7 +3,7 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from mini_vllm.generation import prefill, select_greedy_tokens
+from mini_vllm.generation import prefill, select_greedy_token
 
 MODEL_NAME = "Qwen/Qwen2.5-0.5B"
 MODEL_REVISION = "060db6499f32faf8b98477b0a26969ef7d8b9987"
@@ -44,7 +44,7 @@ def main() -> None:
         input_ids=input_ids,
         attention_mask=attention_mask,
     )
-    next_token_ids = select_greedy_tokens(model_output.logits)
+    next_token_ids = select_greedy_token(model_output.logits)
     next_token_id = next_token_ids.item()
 
     print(f"{device = }")

@@ -98,8 +98,8 @@ def test_decode_one_token_passes_cache_and_position_to_model() -> None:
 
     assert output == "model output"
     assert torch.equal(model.model_inputs["input_ids"], input_ids)
-    assert torch.equal(model.model_inputs["attention_masl"], attention_mask)
-    assert model.model_inputs["past_ley_values"] is kv_cache
+    assert torch.equal(model.model_inputs["attention_mask"], attention_mask)
+    assert model.model_inputs["past_key_values"] is kv_cache
     assert torch.equal(model.model_inputs["cache_position"], cache_position)
     assert model.model_inputs["use_cache"] is True
 
@@ -120,7 +120,7 @@ def test_decode_one_token_rejects_more_than_one_token() -> None:
 
 def test_generate_greedy_reuses_cache_until_requested_length() -> None:
     model = ScriptedModel(next_token_ids=[2, 1, 3])
-    input_ids = torch.tensor([4, 5, 6])
+    input_ids = torch.tensor([[4, 5, 6]])
     attention_mask = torch.ones(1, 3, dtype=torch.long)
 
     generated_ids = generate_greedy(

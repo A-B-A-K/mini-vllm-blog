@@ -31,7 +31,7 @@ def main() -> None:
     print(f"Device {device}")
     print(f"data type {model.dtype}")
     print(f"prompt token IDS {input_ids[0].tolist()}")
-    print(f"generated token ids {actual_token_ids[0].tolist()}")
+    print(f"generated token ids {actual_token_ids}")
     print(
         f"generated tokens {tokenizer.convert_ids_to_tokens(actual_token_ids)}"
     )
@@ -44,3 +44,7 @@ def main() -> None:
         )
 
     print("Matches the complete HF reference: yes")
+
+
+if __name__ == "__main__":
+    main()

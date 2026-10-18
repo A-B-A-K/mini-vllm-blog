@@ -3,7 +3,7 @@
 import torch
 
 from mini_vllm.generation import decode_one_token, prefill, select_greedy_token
-from mini_vllm.model_loader import load_model_and_tokenize
+from mini_vllm.model_loader import load_model_and_tokenizer
 
 MODEL_NAME = "Qwen/Qwen2.5-0.5B"
 MODEL_REVISION = "060db6499f32faf8b98477b0a26969ef7d8b9987"
@@ -13,7 +13,7 @@ EXPECTED_SECOND_TOKEN_ID = 13
 
 
 def main() -> None:
-    model, tokenizer = load_model_and_tokenize(
+    model, tokenizer = load_model_and_tokenizer(
         MODEL_NAME,
         MODEL_REVISION,
     )
@@ -42,7 +42,7 @@ def main() -> None:
         [
             prompt_attention_mask,
             prompt_attention_mask.new_ones(
-                (prompt_attention_mask.shape[0], -1)
+                (prompt_attention_mask.shape[0], 1)
             ),
         ],
         dim=-1,
@@ -57,6 +57,9 @@ def main() -> None:
     decode_output = decode_one_token(
         model=model,
         input_ids=first_token_ids
+        attention_mask=decode_attention_mask,
+        kv_cache=kv_cache,
+        cache_position=cache_position,
     )
 
     second_token_ids = select_greedy_token(decode_output.logits)
