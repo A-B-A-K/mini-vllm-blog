@@ -56,7 +56,7 @@ def main() -> None:
 
     decode_output = decode_one_token(
         model=model,
-        input_ids=first_token_ids
+        input_ids=first_token_ids,
         attention_mask=decode_attention_mask,
         kv_cache=kv_cache,
         cache_position=cache_position,
