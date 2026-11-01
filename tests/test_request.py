@@ -20,7 +20,7 @@ def test_request_moves_from_waiting_to_running_to_finished() -> None:
     assert request.generated_token_ids == [30]
     assert request.token_ids == [10, 20, 30]
 
-    request.append_token(20)
+    request.append_token(40)
 
     assert request.status is RequestStatus.FINISHED
     assert request.token_ids == [10, 20, 30, 40]
@@ -74,7 +74,7 @@ def test_request_rejects_invalid_inputs(
     max_new_tokens: int,
     message: str,
 ) -> None:
-    with pytest.raises(ValueError, match="message"):
+    with pytest.raises(ValueError, match=message):
         Request(
             request_id="request-0",
             prompt_token_ids=prompt_token_ids,

@@ -21,7 +21,7 @@ class ActiveBatch:
 
     requests: list[Request]
     attention_mask: Tensor
-    next_token__ids: Tensor
+    next_token_ids: Tensor
     kv_cache: Any
     cache_position:Tensor
 
@@ -97,7 +97,7 @@ def prefill_batch(
     return ActiveBatch(
         requests=list(requests),
         attention_mask=attention_mask,
-        next_token__ids=next_token_ids,
+        next_token_ids=next_token_ids,
         kv_cache=model_output.past_key_values,
         cache_position=torch.tensor(
             [input_ids.shape[1]],
@@ -129,7 +129,7 @@ def decode_batch(model: nn.Module, batch: ActiveBatch) -> Tensor:
     )
     model_output = decode_one_token(
         model=model,
-        input_ids=batch.next_token__ids,
+        input_ids=batch.next_token_ids,
         attention_mask=attention_mask,
         kv_cache=batch.kv_cache,
         cache_position=batch.cache_position,
@@ -144,7 +144,7 @@ def decode_batch(model: nn.Module, batch: ActiveBatch) -> Tensor:
         request.append(token_id)
 
     batch.attention_mask = attention_mask
-    batch.next_token__ids = next_token_ids
+    batch.next_token_ids = next_token_ids
     batch.kv_cache = model_output.past_key_values
     batch.cache_position = batch.cache_position + 1
     return next_token_ids

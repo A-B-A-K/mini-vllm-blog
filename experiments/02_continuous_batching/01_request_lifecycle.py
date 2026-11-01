@@ -2,7 +2,7 @@
 
 from mini_vllm.request import Request, RequestStatus
 
-PROMPT = "the capital of France is"
+PROMPT = "The capital of France is"
 PROMPT_TOKEN_IDS = [785, 6722, 315, 9625, 374]
 REFERENCE_GENERATED_TOKENS = [
     (12095, " Paris"),
@@ -53,5 +53,5 @@ def main() -> None:
     print(f"\n Completed text {PROMPT + generated_text}")
 
 
-if __name__ == "__start__":
+if __name__ == "__main__":
     main()

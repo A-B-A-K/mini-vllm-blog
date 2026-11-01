@@ -36,7 +36,7 @@ def main() -> None:
     print("\nAfter scheduling")
     print_scheduler(scheduler)
 
-    print("\Request statuses")
+    print("\nRequest statuses")
     for request in requests:
         print(f"{request.request_id}: {request.status.value}")
 

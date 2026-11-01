@@ -24,13 +24,13 @@ def test_scheduler_admits_requets_in_fifo_order() -> None:
 
     running_requests = scheduler.schedule()
 
-    assert [request.request_id for reqeust in running_requests] == [
+    assert [request.request_id for request in running_requests] == [
         "request-0",
         "request-1",
     ]
 
     assert [
-        request.request_id for reqeust in scheduler.waiting_requests
+        request.request_id for request in scheduler.waiting_requests
     ] == ["request-2"]
     assert requests[0].status is RequestStatus.RUNNING
     assert requests[1].status is RequestStatus.RUNNING    
