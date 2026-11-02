@@ -49,6 +49,6 @@ class Scheduler:
         self.running_requests = [
             request
             for request in self.running_requests
-            if RequestStatus is not RequestStatus.FINISHED
+            if request.status is not RequestStatus.FINISHED
         ]
         return finished_requests

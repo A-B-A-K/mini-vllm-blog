@@ -165,11 +165,11 @@ class ContinuousBatchEngine:
     """Run scheduled requests and replace them as they finish."""
 
     def __init__(
-            self,
-            model: nn.Module,
-            scheduler: Scheduler,
-            pad_token_id: int,
-            device: torch.device,
+        self,
+        model: nn.Module,
+        scheduler: Scheduler,
+        pad_token_id: int,
+        device: torch.device,
     ) -> None:
         self.model = model
         self.scheduler = scheduler
@@ -183,7 +183,7 @@ class ContinuousBatchEngine:
     def has_pending_requests(self) -> bool:
         """Return whether waiting or running requests remain"""
         return bool(
-            self.scheduler.waiting_requests 
+            self.scheduler.waiting_requests
             or self.scheduler.running_requests
         )
 
@@ -263,3 +263,4 @@ class ContinuousBatchEngine:
             ],
             cache_action=cache_action,
         )
+    

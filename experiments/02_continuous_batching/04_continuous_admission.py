@@ -17,8 +17,8 @@ REQUESTS = [
 
 
 def print_results(
-        requests: list[Request],
-        tokenizer: PreTrainedTokenizerBase,
+    requests: list[Request],
+    tokenizer: PreTrainedTokenizerBase,
 ) -> None:
     """Print the generated state of each request"""
     for request in requests:
@@ -48,10 +48,10 @@ def main() -> None:
         request = Request(
             request_id=f"request-{index}",
             prompt_token_ids=tokenizer(prompt)["input_ids"],
-            max_new_tokens=max_new_tokens
+            max_new_tokens=max_new_tokens,
         )
         scheduler.add_request(request)
-        request.append(request)
+        requests.append(request)
 
     engine = ContinuousBatchEngine(
         model=model,
