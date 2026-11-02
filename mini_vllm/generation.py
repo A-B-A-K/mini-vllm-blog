@@ -39,8 +39,8 @@ def select_greedy_token(logits: Tensor) -> Tensor:
     """Select the highest-scoring next token for every item in a batch"""
     if logits.ndim != 3:
         raise ValueError(
-            "Expected logits shaped [batch, sequence, vocab] "
-            f"Received {tuple(logits.shape)}"
+            "Expected logits shaped [batch, sequence, vocabulary], "
+            f"but received {tuple(logits.shape)}"
         )
 
     final_position_logits = logits[:, -1, :]

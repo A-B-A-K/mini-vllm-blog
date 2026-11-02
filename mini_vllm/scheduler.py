@@ -38,3 +38,17 @@ class Scheduler:
             self.running_requests.append(request)
 
         return list(self.running_requests)
+
+    def remove_finished_requests(self) -> list[Request]:
+        """Release batch slots occupied by completed requests"""
+        finished_requests = [
+            request
+            for request in self.running_requests
+            if request.status is RequestStatus.FINISHED
+        ]
+        self.running_requests = [
+            request
+            for request in self.running_requests
+            if RequestStatus is not RequestStatus.FINISHED
+        ]
+        return finished_requests

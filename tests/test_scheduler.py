@@ -12,7 +12,7 @@ def make_request(request_id: str) -> Request:
     )
 
 
-def test_scheduler_admits_requets_in_fifo_order() -> None:
+def test_scheduler_admits_requests_in_fifo_order() -> None:
     scheduler = Scheduler(max_batch_size=2)
     requests = [
         make_request("request-0"),
@@ -33,7 +33,7 @@ def test_scheduler_admits_requets_in_fifo_order() -> None:
         request.request_id for request in scheduler.waiting_requests
     ] == ["request-2"]
     assert requests[0].status is RequestStatus.RUNNING
-    assert requests[1].status is RequestStatus.RUNNING    
+    assert requests[1].status is RequestStatus.RUNNING
     assert requests[2].status is RequestStatus.WAITING
 
 
@@ -47,7 +47,7 @@ def test_scheduler_fills_only_the_available_batch_slots() -> None:
     scheduler.add_request(make_request("request-2"))
     running_requests = scheduler.schedule()
 
-    assert [ request.request_id for request in running_requests] == [
+    assert [request.request_id for request in running_requests] == [
         "request-0",
         "request-1",
     ]
@@ -55,6 +55,22 @@ def test_scheduler_fills_only_the_available_batch_slots() -> None:
     assert [
         request.request_id for request in scheduler.waiting_requests
     ] == ["request-2"]
+
+
+def test_scheduler_removes_finished_requests() -> None:
+    scheduler = Scheduler(max_batch_size=2)
+    finished_request = make_request("request-0")
+    running_request = make_request("request-1")
+    scheduler.add_request(finished_request)
+    scheduler.add_request(running_request)
+    scheduler.schedule()
+    finished_request.append_token(20)
+    finished_request.append_token(21)
+
+    removed_requests = scheduler.remove_finished_requests()
+
+    assert removed_requests == [finished_request]
+    assert scheduler.running_requests == [running_request]
 
 
 def test_scheduler_requires_at_least_one_batch_slot() -> None:

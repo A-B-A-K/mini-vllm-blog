@@ -3,8 +3,13 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from mini_vllm.engine import decode_batch, prefill_batch
+from mini_vllm.engine import (
+    ContinuousBatchEngine,
+    decode_batch,
+    prefill_batch,
+)
 from mini_vllm.request import Request
+from mini_vllm.scheduler import Scheduler
 
 
 class ScriptedBatchModel(torch.nn.Module):
@@ -138,3 +143,75 @@ def test_fixed_batch_cannot_decode_a_finished_request() -> None:
 
     with pytest.raises(RuntimeError, match="must remain running"):
         decode_batch(model=model, batch=batch)
+
+
+def test_continuous_engine_replaces_finished_requests() -> None:
+    model = ScriptedBatchModel(
+        tokens_by_call=[
+            [10, 20],
+            [21, 30],
+            [22, 31],
+        ]
+    )
+    scheduler = Scheduler(max_batch_size=2)
+    requests = [
+        Request("request-0", [1], max_new_tokens=1),
+        Request("request-1", [2], max_new_tokens=3),
+        Request("request-2", [3], max_new_tokens=2),
+    ]
+    for request in requests:
+        scheduler.add_request(request)
+
+    engine = ContinuousBatchEngine(
+        model=model,
+        scheduler=scheduler,
+        pad_token_id=0,
+        device=torch.device("cpu"),
+    )
+
+    first_step = engine.step()
+    second_step = engine.step()
+    third_step = engine.step()
+
+    assert first_step.cache_action == "prefill"
+    assert first_step.admitted_request_ids == [
+        "request-0",
+        "request-1",
+    ]
+    assert first_step.finished_request_ids == ["request-0"]
+
+    assert second_step.cache_action == "rebuild"
+    assert second_step.request_ids == ["request-1", "request-2"]
+    assert second_step.admitted_request_ids == ["request-2"]
+
+    assert third_step.cache_action == "decode"
+    assert third_step.finished_request_ids == [
+        "request-1",
+        "request-2",
+    ]
+
+    assert model.calls[1]["input_ids"].tolist() == [
+        [2, 20],
+        [0, 3],
+    ]
+    assert model.calls[2]["input_ids"].tolist() == [[21], [30]]
+    assert model.calls[2]["past_key_values"] == "cache-2"
+
+    assert requests[0].generated_token_ids == [10]
+    assert requests[1].generated_token_ids == [20, 21, 22]
+    assert requests[2].generated_token_ids == [30, 31]
+    assert engine.cache_rebuilds == 1
+    assert engine.recomputed_tokens == 1
+    assert not engine.has_pending_requests
+
+
+def test_continuous_engine_rejects_a_step_without_requests() -> None:
+    engine = ContinuousBatchEngine(
+        model=ScriptedBatchModel(tokens_by_call=[[1]]),
+        scheduler=Scheduler(max_batch_size=1),
+        pad_token_id=0,
+        device=torch.device("cpu"),
+    )
+
+    with pytest.raises(RuntimeError, match="no pending requests"):
+        engine.step()
